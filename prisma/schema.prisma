@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  telegramId         Float            @unique
+  username           String?
+  firstName          String?
+  lastName           String?
+  languageCode       String?
+  isPremium          Boolean          @default(false)
+  avatar             String?
+  isActive           Boolean          @default(true)
+  role               UserRole         @default(USER)
+  
+  // Relations
+  profile            UserProfile?
+  webAppSessions     WebAppSession[]  @relation("UserToWebAppSessions")
+  reportsCreated     Report[]         @relation("UserToReports")
+  reportsProcessed   Report[]         @relation("AdminToReports")
+  reportLogs         ReportLog[]      @relation("AdminToReportLogs")
+  questionsAsked     PersonalQuestion[] @relation("UserQuestions")
+  questionsAnswered  PersonalQuestion[] @relation("AdminAnsweredQuestions")
+   questionsLogs  QuestionLog[] @relation("AdminToQuestionLogs")
+}
+
+model UserProfile {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Fields
+  nickname   String   @default("")
+  age        Int
+  telegram   String   @default("")
+  skills     String   @default("")
+  isApproved Boolean  @default(false)
+  lastEdited DateTime?
+  
+  // Relation
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Report {
+  id           Int          @id @default(autoincrement())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  message      String
+  status       ReportStatus @default(PENDING)
+  ipAddress    String?
+  userAgent    String?
+  adminNotes   String?
+  
+  // Relations
+  userId       Int?
+  user         User?        @relation("UserToReports", fields: [userId], references: [id])
+  
+  processedAt  DateTime?
+  processedBy  Int?
+  processedByAdmin User?    @relation("AdminToReports", fields: [processedBy], references: [id])
+  
+  logs         ReportLog[]  @relation("ReportToLogs")
+}
+
+model ReportLog {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  action          String
+  previousStatus  String
+  newStatus       String
+  comment         String?
+  
+  // Relations
+  reportId        Int
+  report          Report    @relation("ReportToLogs", fields: [reportId], references: [id])
+  
+  adminId         Int?
+  admin           User?     @relation("AdminToReportLogs", fields: [adminId], references: [id])
+}
+
+model WebAppSession {
+  id               Int        @id @default(autoincrement())
+  initData         String
+  createdAt        DateTime   @default(now())
+  expiresAt        DateTime
+  
+  // Relations
+  userId           Int
+  user             User       @relation("UserToWebAppSessions", fields: [userId], references: [id])
+}
+
+model PersonalQuestion {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Content
+  question    String    
+  answer      String?  
+  
+  // Status
+  status      QuestionStatus @default(PENDING)
+  
+  // Privacy
+  isPrivate   Boolean   @default(false)
+  
+  // Relations
+  userId      Int
+  user        User      @relation("UserQuestions", fields: [userId], references: [id])
+  
+  answeredById Int?
+  answeredBy  User?     @relation("AdminAnsweredQuestions", fields: [answeredById], references: [id])
+
+  logs         QuestionLog[]  @relation("QuestionToLogs")
+}
+
+model QuestionLog {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  questionId  Int
+  question    PersonalQuestion @relation("QuestionToLogs", fields: [questionId], references: [id])
+  previousStatus  String
+  newStatus       String
+  action      String
+  adminId     Int?
+  admin       User?    @relation("AdminToQuestionLogs", fields: [adminId], references: [id])
+  comment     String?
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
+
+enum QuestionStatus {
+  PENDING
+  ANSWERED
+  REJECTED
+  ARCHIVED
+}

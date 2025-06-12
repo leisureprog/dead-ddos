@@ -1,0 +1,19 @@
+export default defineEventHandler(event => {
+  const origin = event.node.req.headers.origin
+
+  const config = useRuntimeConfig()
+
+  const allowedOrigin = config.public.baseUrl
+
+  const headers = {
+    'Access-Control-Allow-Origin': origin === allowedOrigin ? allowedOrigin : 'null',
+    crossOriginResourcePolicy: 'same-origin',
+    crossOriginOpenerPolicy: 'same-origin',
+    crossOriginEmbedderPolicy: 'require-corp',
+    contentSecurityPolicy:
+      "default-src 'self'base-uri 'self'font-src 'self' https: data:form-action 'self'frame-ancestors 'self'img-src 'self' data:object-src 'none'script-src 'self'script-src-attr 'none'style-src 'self' https: 'unsafe-inline'upgrade-insecure-requests",
+    'X-XSS-Protection': 1,
+  }
+
+  setHeaders(event, headers)
+})
