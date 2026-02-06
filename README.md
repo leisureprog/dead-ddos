@@ -18,8 +18,8 @@
 1. **Клонирование репозитория**
 
    ```bash
-   git clone <ваш-репозиторий>
-   cd <директория-репозитория>
+   git clone https://github.com/leisureprog/dead-ddos
+   cd dead-ddos
    ```
 
 2. **Установка зависимостей**
